@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h1>WebSockets test</h1>
+		
+
+			<input type="radio" name="resolution" id="640" value="0" checked="checked">640*480</input>
+			<input type="radio" name="resolution" id="800" value="1" >800*600</input>
+			<input type="radio" name="resolution" id="1280" value="2" >1280*960</input>
+			<input type="radio" name="resolution" id="custom" value="3" ><input type="text" id="width"/>*<input type="text" id="height"/></input>
+			<br/>
+            <button id="start">START</button>
+			<button id="stop">STOP</button>
+
+        <div><p id="count_p">FPS: 0</p><p id="latency_p">Latency: 0</p></div>
+		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #d3d3d3;">Your browser does not support the HTML5 canvas tag.</canvas>
+    </body>
+	<script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript">
+		var count = 0;
+		var reader = new FileReader();
+		var c=document.getElementById("myCanvas");
+		var ctx=c.getContext("2d");
+		var imgData=ctx.createImageData(c.width, c.height);
+		
+		var requestAnimFrame = (function(){
+			return window.requestAnimationFrame ||
+			window.webkitRequestAnimationFrame ||
+			window.mozRequestAnimationFrame ||
+			function( callback ){
+				window.setTimeout(callback, 1000 / 60);
+			};
+		})();
+		
+		$(function() {
+			window.WebSocket = window.WebSocket || window.MozWebSocket;
+
+			var websocket = new WebSocket('ws://localhost:9000',
+										  'dumb-increment-protocol');
+
+			websocket.onopen = function () {
+				$('h1').css('color', 'green');
+			};
+
+			websocket.onerror = function () {
+				$('h1').css('color', 'red');
+			};
+
+			websocket.onmessage = function (message) {
+				count++;
+				reader.readAsArrayBuffer(message.data);
+			};
+			
+			$('#start').click(function(e) {
+				e.preventDefault();
+				var v = $('input:radio:checked').val();
+				switch (v){
+				default:
+				case '0':
+					c.setAttribute('width', 640);
+					c.setAttribute('height', 480);
+					imgData=ctx.createImageData(c.width, c.height);
+					websocket.send(1);
+					break;
+				case '1':
+					c.setAttribute('width', 800);
+					c.setAttribute('height', 600);
+					imgData=ctx.createImageData(c.width, c.height);
+					websocket.send(2);
+					break;
+				case '2':
+					c.setAttribute('width', 1280);
+					c.setAttribute('height', 960);
+					imgData=ctx.createImageData(c.width, c.height);
+					websocket.send(3);
+					break;
+				case '3':
+					var width = $('#width').val();
+					var height = $('#height').val();
+					c.setAttribute('width', width);
+					c.setAttribute('height', height);
+					imgData=ctx.createImageData(c.width, c.height);
+					websocket.send(width * height);
+					break;
+				}
+			});
+			
+			$('#start640').click(function(e) {
+				e.preventDefault();
+				c.setAttribute('width', 640);
+				c.setAttribute('height', 480);
+				imgData=ctx.createImageData(c.width, c.height);
+				websocket.send(1);
+			});
+			
+			$('#start800').click(function(e) {
+				e.preventDefault();
+				c.setAttribute('width', 800);
+				c.setAttribute('height', 600);
+				imgData=ctx.createImageData(c.width, c.height);
+				websocket.send(2);
+			});
+			
+			$('#start1280').click(function(e) {
+				e.preventDefault();
+				c.setAttribute('width', 1280);
+				c.setAttribute('height', 960);
+				imgData=ctx.createImageData(c.width, c.height);
+				websocket.send(3);
+			});
+			
+			$('#stop').click(function(e) {
+				e.preventDefault();
+				websocket.send(0);
+			});
+		});
+		 
+		reader.onload = function(evt){
+			var arr = new Uint8ClampedArray(evt.target.result);
+			var stamp = new Int32Array(evt.target.result,0,1);
+			imgData.data.set(arr);
+			ctx.putImageData(imgData,0,0);
+			var time = new Date();
+			var time_ms = ((time.getHours()*60+time.getMinutes())*60+time.getSeconds())*1000+time.getMilliseconds();
+			$("#latency_p").text('Latency: ' + (time_ms-stamp[0]));
+		};
+		
+		/*
+		(function showImg(){
+		    $("#count_p").text(count);
+			ctx.putImageData(imgData,0,0);
+			requestAnimFrame(showImg);
+		}());
+		*/
+		
+		setInterval(function(){
+			$("#count_p").text('FPS: ' + count/2);
+			//console.log(count/2);
+			//console.log(size);
+			count = 0;
+		}, 2000);
+		
+	</script>
+</html>
