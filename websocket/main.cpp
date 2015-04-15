@@ -31,7 +31,7 @@ enum libwebsocket_callback_reasons reason, void *user,
 }
 
 static int
-callback_dumb_increment(struct libwebsocket_context * that,
+callback_raw_camera_data(struct libwebsocket_context * that,
 struct libwebsocket *wsi,
 enum libwebsocket_callback_reasons reason,
 	void *user, void *in, size_t len)
@@ -219,8 +219,8 @@ static struct libwebsocket_protocols protocols[] = {
 		0              // per_session_data_size
 	},
 	{
-		"dumb-increment-protocol", // protocol name - very important!
-		callback_dumb_increment,   // callback
+		"raw-camera-data", // protocol name - very important!
+		callback_raw_camera_data,   // callback
 		0                          // we don't use any per session data
 	},
 	{
