@@ -140,6 +140,7 @@ enum libwebsocket_callback_reasons reason,
 			bufSize = width * height * 4;
 			buf = new unsigned char[bufSize + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING];
 			sm->Init();
+			sm->QueryCaptureManager()->QueryDevice()->SetMirrorMode(PXCCapture::Device::MirrorMode::MIRROR_MODE_HORIZONTAL);
 			break;
 		}
 		default:
