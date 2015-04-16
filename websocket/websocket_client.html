@@ -5,17 +5,20 @@
     </head>
     <body>
         <h1>WebSockets test</h1>
-		<input type="radio" name="resolution" id="640" value="0" checked="checked">640*480</input>
-		<input type="radio" name="resolution" id="800" value="1" >800*600</input>
-		<input type="radio" name="resolution" id="1280" value="2" >1280*960</input>
-		<input type="radio" name="resolution" id="custom" value="3" ><input type="text" id="width"/>*<input type="text" id="height"/></input>
-		<br/>
+        <p>
+		DEVICE: 
+		<select id="selectName" name="name">
+		</select>
+		PROFILE: 
+		<select id="selectProfile" name="profile">
+		</select>
+		<p/>
 		<button id="start">START</button>
 		<button id="stop">STOP</button>
         <div><p id="count_p">FPS: 0</p><p id="latency_p">Latency: 0</p></div>
 		<canvas id="myCanvas" width="800" height="600" style="border:1px solid #d3d3d3;">Your browser does not support the HTML5 canvas tag.</canvas>
     </body>
-	<script src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script src="./jquery.min.js"></script>
 	<script type="text/javascript">
 		var count = 0;
 		var reader = new FileReader();
@@ -41,38 +44,55 @@
 			reader.readAsArrayBuffer(message.data);
 		};
 		
+		var cameraInfo = new WebSocket('ws://localhost:9000',
+									  'camera-info');
+		cameraInfo.onopen = function(){
+			console.log('open');
+		}
+		
+		cameraInfo.onerror = function(){
+			console.log('error');
+		}
+		
+		cameraInfo.onmessage = function(message){
+			message = message.data;
+			var strs = message.split(',');
+			if(strs[0] == 'name'){
+				var $selectName = $('#selectName');
+				$selectName.empty();
+				for(var i = 1; i < strs.length; i++){
+					$selectName.append('<option value=\"' + (i - 1) + '\">' + strs[i] + '</option>');
+				}
+			}
+			else if(strs[0] == 'profile'){
+				var $selectProfile = $('#selectProfile');
+				$selectProfile.empty();
+				for(var i = 1; i < strs.length; i++){
+					$selectProfile.append('<option value=\"' + (i + 9) + '\">' + strs[i] + '</option>');
+				}
+			}
+		}
+
+		$('#selectName').change(function(){
+			var val = $(this).val();
+			console.log(val);
+			cameraInfo.send(val);
+		})
+
+		$('#selectProfile').change(function(){
+			var val = $(this).val();
+			console.log(val);
+			cameraInfo.send(val);
+		})
+		
 		$('#start').click(function(e) {
 			e.preventDefault();
-			var v = $('input:radio:checked').val();
-			switch (v){
-			default:
-			case '0':
-				c.setAttribute('width', 640);
-				c.setAttribute('height', 480);
-				imgData=ctx.createImageData(c.width, c.height);
-				websocket.send(1);
-				break;
-			case '1':
-				c.setAttribute('width', 800);
-				c.setAttribute('height', 600);
-				imgData=ctx.createImageData(c.width, c.height);
-				websocket.send(2);
-				break;
-			case '2':
-				c.setAttribute('width', 1280);
-				c.setAttribute('height', 960);
-				imgData=ctx.createImageData(c.width, c.height);
-				websocket.send(3);
-				break;
-			case '3':
-				var width = $('#width').val();
-				var height = $('#height').val();
-				c.setAttribute('width', width);
-				c.setAttribute('height', height);
-				imgData=ctx.createImageData(c.width, c.height);
-				websocket.send(width * height);
-				break;
-			}
+			var profile = $('#selectProfile').find("option:selected").text();
+			var resolution = profile.split('x');
+			c.setAttribute('width', resolution[0]);
+			c.setAttribute('height', resolution[1]);
+			imgData=ctx.createImageData(c.width, c.height);
+			websocket.send(1);
 		});
 		
 		$('#stop').click(function(e) {
